@@ -63,7 +63,7 @@ describe('buildCompactVoicePrompt & static memoization', () => {
     // Messages array verification
     expect(messages[0].role).toBe('system');
     expect(messages[1].role).toBe('user');
-    expect(messages[1].content).toBe('Haan bolo');
+    expect(messages[1].content).toContain('Haan bolo');
   });
 
   it('memoizes static agent prompt across calls for the same campaign+agent', () => {

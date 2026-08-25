@@ -2,6 +2,7 @@ import { Campaign } from '../schemas/campaign.schema';
 import { Agent } from '../schemas/agent.schema';
 import { ConversationTurn } from '../schemas/request.schema';
 import { formatVariablesBlock, sanitizeValue } from './injectVariables';
+import { detectInputLanguage } from '../utils/languageDetector';
 
 export interface BuildPromptResult {
   fullPrompt: string;
@@ -160,21 +161,50 @@ export function buildCompactVoicePrompt(
     systemPromptSections.push(`# CURRENT CONVERSATION STATE\nCurrent State: ${currentState}`);
   }
 
-  // Dynamic Tail: Explicit turn-level language detection instruction
+  // Dynamic Tail: Explicit turn-level language target contract
   const lastUserTurn = conversationHistory.slice().reverse().find((t) => t.role === 'user');
   if (lastUserTurn && lastUserTurn.content) {
-    systemPromptSections.push(`# LANGUAGE INSTRUCTION FOR THIS TURN
-Detect the language of the customer's message: "${lastUserTurn.content}"
-You MUST reply in the EXACT SAME language used by the customer above (English, Gujarati, Marathi, Tamil, Telugu, Hindi, etc.). Do not default to Hindi if customer used a different language.`);
+    const detected = detectInputLanguage(lastUserTurn.content);
+    systemPromptSections.push(`# CRITICAL TARGET RESPONSE LANGUAGE CONTRACT (ALL LANGUAGES)
+Target Response Language: ${detected.name.toUpperCase()} (${detected.script})
+
+STRICT COMPLIANCE RULES:
+1. Customer message: "${lastUserTurn.content}"
+2. Customer detected language: ${detected.name.toUpperCase()} (${detected.code})
+3. YOU MUST GENERATE YOUR RESPONSE 100% IN ${detected.name.toUpperCase()} (${detected.script}).
+4. UNIVERSAL LANGUAGE COMPLIANCE:
+   - If customer spoke Tamil -> Respond 100% in Tamil / Tanglish.
+   - If customer spoke Telugu -> Respond 100% in Telugu / Teluglish.
+   - If customer spoke Kannada -> Respond 100% in Kannada / Kannadish.
+   - If customer spoke Malayalam -> Respond 100% in Malayalam / Malayalish.
+   - If customer spoke Bengali -> Respond 100% in Bengali / Benglish.
+   - If customer spoke Punjabi -> Respond 100% in Punjabi / Punjabish.
+   - If customer spoke Marathi -> Respond 100% in Marathi / Marathlish.
+   - If customer spoke Gujarati -> Respond 100% in Gujarati / Gujlish.
+   - If customer spoke Hindi -> Respond 100% in Hindi / Hinglish.
+   - If customer spoke English -> Respond 100% in English.
+5. MID-CALL SWITCHING: If customer switched languages mid-call (e.g. from Gujarati to Hindi, or English to Tamil), IMMEDIATELY switch to ${detected.name.toUpperCase()} NOW.
+6. DO NOT continue speaking a previous language. OVERRIDE ALL PREVIOUS ASSISTANT TURNS.`);
   }
 
   const systemPrompt = systemPromptSections.join('\n\n---\n\n');
 
   // Conversation history returned natively as ChatCompletions messages[] array
-  const formattedHistoryMessages = conversationHistory.slice(-12).map((t) => ({
-    role: t.role === 'user' ? 'user' : ('assistant' as 'user' | 'assistant'),
-    content: t.content,
-  }));
+  const formattedHistoryMessages = conversationHistory.slice(-12).map((t, idx, arr) => {
+    const isLastUserTurn = t.role === 'user' && idx === arr.length - 1;
+    if (isLastUserTurn) {
+      const detected = detectInputLanguage(t.content);
+      const languageDirective = `\n\n[MANDATORY LANGUAGE DIRECTIVE: The customer is speaking in ${detected.name.toUpperCase()} (${detected.script}). You MUST generate your response ONLY in ${detected.name.toUpperCase()} (${detected.script}). Do NOT use English or Hindi if the customer spoke in ${detected.name.toUpperCase()}. Ignore the language of all previous assistant messages and reply in ${detected.name.toUpperCase()} now.]`;
+      return {
+        role: 'user',
+        content: t.content + languageDirective,
+      };
+    }
+    return {
+      role: t.role === 'user' ? 'user' : ('assistant' as 'user' | 'assistant'),
+      content: t.content,
+    };
+  });
 
   const messages = [
     { role: 'system', content: systemPrompt },

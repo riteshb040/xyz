@@ -19,7 +19,7 @@ const mockCampaign: Campaign = {
 const mockAgent: Agent = {
   id: 'polite-reminder',
   name: 'Polite Reminder Agent',
-  companyName: 'ABC Finance',
+  companyName: 'Lender Account Services',
   persona: 'Courteous multi-lingual loan recovery representative',
   behavioralRules: [
     'Be polite and empathetic to customer problems',
@@ -27,7 +27,7 @@ const mockAgent: Agent = {
     'Focus on agreeing a repayment commitment date',
     'Auto-detect customer language and respond in the same language',
   ],
-  languageRules: { primary: 'hi-IN', fallback: 'en-IN', tone: 'respectful', notes: 'Auto-detect customer language (Hindi, Gujarati, Marathi, Tamil, Telugu, English, etc.)' },
+  languageRules: { primary: 'hi-IN', fallback: 'en-IN', tone: 'respectful', notes: 'Auto-detect customer language' },
   outputRules: { format: 'json', maxSentences: 2, mustInclude: [], mustAvoid: [] },
 };
 
@@ -40,18 +40,17 @@ const vars = {
 };
 
 const history: any[] = [];
-// Multi-lingual inputs testing mid-call language switching & auto-detection!
+// Multi-lingual inputs across multiple Indian languages:
 const inputs = [
-  'Main aaj payment nahi kar sakta, thodi problem hai.',          // Hindi / Hinglish
-  'Tamare shun jankari joiye chhe, hu kale paise aapis.',         // Gujarati
-  'Can you please confirm what is the total due amount?',        // English
-  'Maza naav Rakesh nahi ahe, tumhi konala phone kela?',        // Marathi
+  'are bhai kone phone karyo che kale phone karje aje nai',      // Gujarati
+  'are bhai bar bar pareshan mat kar',                          // Hindi / Hinglish
+  'vanakkam bro, naan inniki thara mudiyadhu, yen theriyuma?',   // Tamil (Tanglish)
 ];
 
 async function main() {
-  console.log('\n--- MULTI-LINGUAL AUTO-DETECTION & LLM STREAMING DIALOGUE ---\n');
+  console.log('\n--- ALL-LANGUAGE UNIVERSAL AUTO-DETECTION & MID-CALL SWITCHING ---\n');
 
-  // TURN 1: Dynamic LLM Streaming Greeting
+  // TURN 1: Initial Greeting (Opening in English)
   const start = Date.now();
   const greetingPrompt = buildCompactVoicePrompt(mockCampaign, mockAgent, vars, [], 'INITIAL_GREETING');
   
@@ -74,7 +73,7 @@ async function main() {
     console.error('LLM Streaming Greeting Error:', err.message);
   }
 
-  // SUBSEQUENT TURNS: Multi-lingual Auto-Detection Conversation
+  // SUBSEQUENT TURNS: Testing multi-lingual switching across Gujarati, Hindi, Tamil
   for (const input of inputs) {
     console.log(`\n👤 CUSTOMER: ${input}`);
     history.push({ role: 'user', content: input });
@@ -102,7 +101,7 @@ async function main() {
     }
   }
 
-  console.log('\n--- MULTI-LINGUAL DIALOGUE COMPLETE ---\n');
+  console.log('\n--- UNIVERSAL MULTI-LINGUAL DIALOGUE COMPLETE ---\n');
 }
 
 main();
