@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildPrompt } from '../src/prompt/buildPrompt';
+import { buildCompactVoicePrompt, buildStaticAgentPrompt, clearStaticPromptCache } from '../src/prompt/buildPrompt';
 import { Campaign } from '../src/schemas/campaign.schema';
 import { Agent } from '../src/schemas/agent.schema';
 
-describe('buildPrompt', () => {
+describe('buildCompactVoicePrompt & static memoization', () => {
   const mockCampaign: Campaign = {
     id: 'loan-default-30day',
     name: '30-Day Loan Default',
@@ -35,29 +35,51 @@ describe('buildPrompt', () => {
     },
   };
 
-  it('assembles sections in the correct deterministic order', () => {
-    const { fullPrompt } = buildPrompt(
+  it('assembles 3 strictly ordered layers (Static -> Semi-Static -> Dynamic Tail)', () => {
+    const { systemPrompt, messages } = buildCompactVoicePrompt(
       mockCampaign,
       mockAgent,
       { customerName: 'Rakesh', debtAmount: 5000 },
-      [{ role: 'user', content: 'Haan bolo' }]
+      [{ role: 'user', content: 'Haan bolo' }],
+      'INITIAL_GREETING'
     );
 
-    expect(fullPrompt).toContain('# MASTER SYSTEM PROMPT');
-    expect(fullPrompt).toContain('# 1. CORE CHARACTER');
-    expect(fullPrompt).toContain('# 2. CHARACTER CONSISTENCY');
-    expect(fullPrompt).toContain('# 7. PRIMARY CONVERSATION OBJECTIVE');
-    expect(fullPrompt).toContain('# 10. SPEAKING STYLE & VOICE PERSONA');
-    expect(fullPrompt).toContain('# 11. CUSTOMER FACTS & STATE');
-    expect(fullPrompt).toContain('# 12. RECENT CONVERSATION HISTORY');
-    expect(fullPrompt).toContain('# 13. OUTPUT CONTRACT');
+    expect(systemPrompt).toContain('# 1. CORE CHARACTER');
+    expect(systemPrompt).toContain('# 2. CHARACTER CONSISTENCY');
+    expect(systemPrompt).toContain('# 3. PRIMARY CONVERSATION OBJECTIVE');
+    expect(systemPrompt).toContain('# 4. WORKFLOW & BEHAVIOR RULES');
+    expect(systemPrompt).toContain('# 5. CRITICAL LANGUAGE AUTO-DETECTION RULES');
+    expect(systemPrompt).toContain('# TRUSTED CUSTOMER FACTS');
+    expect(systemPrompt).toContain('# CURRENT CONVERSATION STATE');
 
-    // Section ordering verification
-    const masterIdx = fullPrompt.indexOf('# MASTER SYSTEM PROMPT');
-    const characterIdx = fullPrompt.indexOf('# 1. CORE CHARACTER');
-    const historyIdx = fullPrompt.indexOf('# 12. RECENT CONVERSATION HISTORY');
+    // Layer ordering verification
+    const coreIdx = systemPrompt.indexOf('# 1. CORE CHARACTER');
+    const factsIdx = systemPrompt.indexOf('# TRUSTED CUSTOMER FACTS');
+    const stateIdx = systemPrompt.indexOf('# CURRENT CONVERSATION STATE');
 
-    expect(masterIdx).toBeLessThan(characterIdx);
-    expect(characterIdx).toBeLessThan(historyIdx);
+    expect(coreIdx).toBeLessThan(factsIdx);
+    expect(factsIdx).toBeLessThan(stateIdx);
+
+    // Messages array verification
+    expect(messages[0].role).toBe('system');
+    expect(messages[1].role).toBe('user');
+    expect(messages[1].content).toBe('Haan bolo');
+  });
+
+  it('memoizes static agent prompt across calls for the same campaign+agent', () => {
+    clearStaticPromptCache();
+    const prompt1 = buildStaticAgentPrompt(mockCampaign, mockAgent);
+    const prompt2 = buildStaticAgentPrompt(mockCampaign, mockAgent);
+
+    expect(prompt1).toBe(prompt2); // Exact same memory reference due to memoization
+  });
+
+  it('invalidates static cache when clearStaticPromptCache is called', () => {
+    clearStaticPromptCache();
+    const prompt1 = buildStaticAgentPrompt(mockCampaign, mockAgent);
+    clearStaticPromptCache();
+    const prompt2 = buildStaticAgentPrompt(mockCampaign, mockAgent);
+
+    expect(prompt1).toEqual(prompt2); // Same string content but re-generated after cache clearance
   });
 });

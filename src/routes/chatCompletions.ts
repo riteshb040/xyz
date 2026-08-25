@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { ChatCompletionsRequestSchema, ConversationTurn } from '../schemas/request.schema';
 import { getCampaign, getAgent, getAllCampaigns, getAllAgents } from '../config/loader';
-import { buildPrompt } from '../prompt/buildPrompt';
+import { buildPrompt, buildCompactVoicePrompt } from '../prompt/buildPrompt';
 import { callSarvamLLM, callSarvamLLMStream } from '../llm/sarvamClient';
 import { postProcessOutput } from '../llm/postProcess';
 import { env } from '../config/env';
@@ -63,7 +63,7 @@ export async function chatCompletionsRoute(fastify: FastifyInstance): Promise<vo
     }));
 
     try {
-      const { fullPrompt } = buildPrompt(campaign, agent, variables, history);
+      const voicePromptResult = buildCompactVoicePrompt(campaign, agent, variables, history);
 
       if (parseResult.data.stream) {
         reply.raw.setHeader('Content-Type', 'text/event-stream');
@@ -72,7 +72,7 @@ export async function chatCompletionsRoute(fastify: FastifyInstance): Promise<vo
 
         const chunkId = `chatcmpl-${Date.now()}`;
 
-        await callSarvamLLMStream(fullPrompt, (chunk: string) => {
+        await callSarvamLLMStream(voicePromptResult.messages, (chunk: string) => {
           const chunkPayload = {
             id: chunkId,
             object: 'chat.completion.chunk',
@@ -93,8 +93,8 @@ export async function chatCompletionsRoute(fastify: FastifyInstance): Promise<vo
         return reply.raw.end();
       }
 
-      const llmResult = await callSarvamLLM(fullPrompt);
-      const processed = postProcessOutput(llmResult.rawText, agent);
+      const llmResult = await callSarvamLLM(voicePromptResult.messages);
+      const processed = postProcessOutput(llmResult.rawText, agent, 'voice');
 
       logger.info({ campaignId, agentId, compatibility: true }, 'Processed Chat Completions request');
 

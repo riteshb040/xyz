@@ -46,7 +46,7 @@ Create or edit `.env` in the project root:
 PORT=4000
 HOST=0.0.0.0
 API_KEY=orchestrator-secret-key-123
-SARVAM_API_KEY=sk_s7fwy425_hlxCEHyv6gDogUfCTLbQPYvn
+SARVAM_API_KEY=your_sarvam_api_key_here
 SARVAM_MODEL=sarvam-105b-conversations
 ```
 

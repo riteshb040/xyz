@@ -25,7 +25,7 @@ export async function callSarvamLLM(
     model: env.SARVAM_MODEL,
     messages,
     temperature: 0.3,
-    max_tokens: 150,
+    max_tokens: 65,
   };
 
   let attempts = 0;
@@ -128,22 +128,24 @@ export async function callSarvamLLM(
 }
 
 export async function callSarvamLLMStream(
-  prompt: string,
+  promptOrMessages: string | Array<{ role: string; content: string }>,
   onChunk: (chunk: string) => void,
   systemMessage?: string
 ): Promise<SarvamLLMResponse> {
   const startTime = Date.now();
 
-  const messages = [
-    ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
-    { role: 'user', content: prompt },
-  ];
+  const messages = Array.isArray(promptOrMessages)
+    ? promptOrMessages
+    : [
+        ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
+        { role: 'user', content: promptOrMessages },
+      ];
 
   const payload = {
     model: env.SARVAM_MODEL,
     messages,
     temperature: 0.3,
-    max_tokens: 150,
+    max_tokens: 65,
     stream: true,
   };
 

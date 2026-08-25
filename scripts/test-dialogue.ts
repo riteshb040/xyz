@@ -1,5 +1,5 @@
-import { buildPrompt } from '../src/prompt/buildPrompt';
-import { callSarvamLLM } from '../src/llm/sarvamClient';
+import { buildCompactVoicePrompt } from '../src/prompt/buildPrompt';
+import { callSarvamLLMStream } from '../src/llm/sarvamClient';
 import { postProcessOutput } from '../src/llm/postProcess';
 import { Campaign } from '../src/schemas/campaign.schema';
 import { Agent } from '../src/schemas/agent.schema';
@@ -20,13 +20,14 @@ const mockAgent: Agent = {
   id: 'polite-reminder',
   name: 'Polite Reminder Agent',
   companyName: 'ABC Finance',
-  persona: 'Courteous loan recovery representative',
+  persona: 'Courteous multi-lingual loan recovery representative',
   behavioralRules: [
     'Be polite and empathetic to customer problems',
     'Never threaten legal or police action',
     'Focus on agreeing a repayment commitment date',
+    'Auto-detect customer language and respond in the same language',
   ],
-  languageRules: { primary: 'hi-IN', fallback: 'en-IN', tone: 'respectful', notes: 'Hinglish' },
+  languageRules: { primary: 'hi-IN', fallback: 'en-IN', tone: 'respectful', notes: 'Auto-detect customer language (Hindi, Gujarati, Marathi, Tamil, Telugu, English, etc.)' },
   outputRules: { format: 'json', maxSentences: 2, mustInclude: [], mustAvoid: [] },
 };
 
@@ -39,53 +40,69 @@ const vars = {
 };
 
 const history: any[] = [];
+// Multi-lingual inputs testing mid-call language switching & auto-detection!
 const inputs = [
-  'Main aaj payment nahi kar sakta, problem hai.',
-  'hello',
-  'are kya he re',
-  'are bhai call cut kar sale',
-  'mera name btao',
-  'are bhai me rakhes nhi bol rha',
-  'are me rakesh ka dost hu bhai shab',
+  'Main aaj payment nahi kar sakta, thodi problem hai.',          // Hindi / Hinglish
+  'Tamare shun jankari joiye chhe, hu kale paise aapis.',         // Gujarati
+  'Can you please confirm what is the total due amount?',        // English
+  'Maza naav Rakesh nahi ahe, tumhi konala phone kela?',        // Marathi
 ];
 
 async function main() {
-  console.log('\n--- 100% DIRECT LLM AI AGENT DIALOGUE (FROM STARTING GREETING) ---\n');
+  console.log('\n--- MULTI-LINGUAL AUTO-DETECTION & LLM STREAMING DIALOGUE ---\n');
 
-  // TURN 1: Dynamic LLM Greeting generated from agent & campaign system prompt
+  // TURN 1: Dynamic LLM Streaming Greeting
   const start = Date.now();
-  const greetingPrompt = buildPrompt(mockCampaign, mockAgent, vars, [], 'INITIAL_GREETING');
+  const greetingPrompt = buildCompactVoicePrompt(mockCampaign, mockAgent, vars, [], 'INITIAL_GREETING');
   
   try {
-    const greetingRes = await callSarvamLLM(greetingPrompt.messages);
-    const processedGreeting = postProcessOutput(greetingRes.rawText, mockAgent);
-    const latency = Date.now() - start;
-    console.log(`🤖 AGENT (LLM): ${processedGreeting.text} (⚡ ${latency}ms)`);
+    process.stdout.write('🤖 AGENT (LLM Stream): ');
+    let firstTokenTime: number | null = null;
+    
+    const greetingRes = await callSarvamLLMStream(greetingPrompt.messages, (chunk: string) => {
+      if (firstTokenTime === null) {
+        firstTokenTime = Date.now() - start;
+      }
+      process.stdout.write(chunk);
+    });
+
+    const processedGreeting = postProcessOutput(greetingRes.rawText, mockAgent, 'voice');
+    const totalLatency = Date.now() - start;
+    console.log(`\n   ⚡ TTFT: ${firstTokenTime || totalLatency}ms | Total: ${totalLatency}ms`);
     history.push({ role: 'assistant', content: processedGreeting.text });
   } catch (err: any) {
-    console.error('LLM Greeting Error:', err.message);
+    console.error('LLM Streaming Greeting Error:', err.message);
   }
 
-  // SUBSEQUENT TURNS: Live LLM Agent Conversation using messages array & history
+  // SUBSEQUENT TURNS: Multi-lingual Auto-Detection Conversation
   for (const input of inputs) {
     console.log(`\n👤 CUSTOMER: ${input}`);
     history.push({ role: 'user', content: input });
 
     const turnStart = Date.now();
     try {
-      const fullPromptResult = buildPrompt(mockCampaign, mockAgent, vars, history);
-      const res = await callSarvamLLM(fullPromptResult.messages);
-      const processed = postProcessOutput(res.rawText, mockAgent);
-      const latency = Date.now() - turnStart;
+      process.stdout.write('🤖 AGENT (LLM Stream): ');
+      let firstTokenTime: number | null = null;
 
-      console.log(`🤖 AGENT (LLM): ${processed.text} (⚡ ${latency}ms)`);
+      const fullPromptResult = buildCompactVoicePrompt(mockCampaign, mockAgent, vars, history);
+      const res = await callSarvamLLMStream(fullPromptResult.messages, (chunk: string) => {
+        if (firstTokenTime === null) {
+          firstTokenTime = Date.now() - turnStart;
+        }
+        process.stdout.write(chunk);
+      });
+
+      const processed = postProcessOutput(res.rawText, mockAgent, 'voice');
+      const totalLatency = Date.now() - turnStart;
+
+      console.log(`\n   ⚡ TTFT: ${firstTokenTime || totalLatency}ms | Total: ${totalLatency}ms`);
       history.push({ role: 'assistant', content: processed.text });
     } catch (err: any) {
-      console.error('LLM Turn Error:', err.message);
+      console.error('\nLLM Turn Error:', err.message);
     }
   }
 
-  console.log('\n--- DIRECT LLM DIALOGUE COMPLETE ---\n');
+  console.log('\n--- MULTI-LINGUAL DIALOGUE COMPLETE ---\n');
 }
 
 main();

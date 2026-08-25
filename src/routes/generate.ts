@@ -74,25 +74,17 @@ export async function generateRoute(fastify: FastifyInstance): Promise<void> {
       // 100% Direct LLM AI Agent Generation (using campaign & agent prompt)
       try {
         if (isInitialTurn) {
-          // Turn 1: Dynamic LLM Opening Greeting generated from campaign/agent prompt
-          const greetingPrompt = buildPrompt(campaign, agent, variables, [], 'INITIAL_GREETING', currentState);
+          // Turn 1: Dynamic LLM Opening Greeting generated from 3-layer compact voice prompt
+          const greetingPrompt = buildCompactVoicePrompt(campaign, agent, variables, [], 'INITIAL_GREETING');
           const llmResult = await callSarvamLLM(greetingPrompt.messages);
-          responseOutput = postProcessOutput(llmResult.rawText, agent);
+          responseOutput = postProcessOutput(llmResult.rawText, agent, 'voice');
           promptTokens = llmResult.promptTokens || 0;
           completionTokens = llmResult.completionTokens || 0;
         } else {
-          // Subsequent Turns: Dynamic ChatCompletion messages array (system + history turns)
-          const fullPromptResult = buildPrompt(
-            campaign,
-            agent,
-            variables,
-            activeHistory,
-            currentState,
-            undefined,
-            undefined
-          );
-          const llmResult = await callSarvamLLM(fullPromptResult.messages);
-          responseOutput = postProcessOutput(llmResult.rawText, agent);
+          // Subsequent Turns: Dynamic ChatCompletion messages array from 3-layer compact voice prompt
+          const voicePromptResult = buildCompactVoicePrompt(campaign, agent, variables, activeHistory, currentState);
+          const llmResult = await callSarvamLLM(voicePromptResult.messages);
+          responseOutput = postProcessOutput(llmResult.rawText, agent, 'voice');
           promptTokens = llmResult.promptTokens || 0;
           completionTokens = llmResult.completionTokens || 0;
         }

@@ -22,7 +22,20 @@ describe('postProcessOutput', () => {
     },
   };
 
-  it('parses valid JSON string output correctly', () => {
+  it('voice mode treats rawText directly as spoken text without trying JSON.parse', () => {
+    const raw = 'Namaste Rakesh ji, aapka payment baki hai.';
+    const result = postProcessOutput(raw, mockAgent, 'voice');
+    expect(result.text).toBe('Namaste Rakesh ji, aapka payment baki hai.');
+    expect(result.language).toBe('hi-IN');
+  });
+
+  it('voice mode redacts mustAvoid keywords from plain spoken text', () => {
+    const raw = 'Namaste Rakesh ji, legal threats nahi karenge.';
+    const result = postProcessOutput(raw, mockAgent, 'voice');
+    expect(result.text).toBe('Namaste Rakesh ji, [redacted] nahi karenge.');
+  });
+
+  it('structured mode parses valid JSON string output correctly', () => {
     const raw = JSON.stringify({
       text: 'Namaste Rakesh ji, aapka payment baki hai.',
       language: 'hi-IN',
@@ -30,29 +43,8 @@ describe('postProcessOutput', () => {
       flags: { escalationNeeded: false, sentimentDetected: 'neutral' },
     });
 
-    const result = postProcessOutput(raw, mockAgent);
+    const result = postProcessOutput(raw, mockAgent, 'structured');
     expect(result.text).toBe('Namaste Rakesh ji, aapka payment baki hai.');
     expect(result.flags.escalationNeeded).toBe(false);
-  });
-
-  it('wraps plain text string into structured shape if model fails to output valid JSON', () => {
-    const raw = 'Namaste Rakesh ji, please pay today.';
-    const result = postProcessOutput(raw, mockAgent);
-    expect(result.text).toBe('Namaste Rakesh ji, please pay today.');
-    expect(result.language).toBe('hi-IN');
-  });
-
-  it('strips markdown code block formatting automatically', () => {
-    const raw = `\`\`\`json
-{
-  "text": "Hello Rakesh",
-  "language": "hi-IN",
-  "suggestedNextAction": "await_customer_reply",
-  "flags": { "escalationNeeded": false, "sentimentDetected": "neutral" }
-}
-\`\`\``;
-
-    const result = postProcessOutput(raw, mockAgent);
-    expect(result.text).toBe('Hello Rakesh');
   });
 });

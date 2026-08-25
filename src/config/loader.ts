@@ -70,6 +70,8 @@ export function loadAllConfigs(): void {
   }
 }
 
+import { clearStaticPromptCache } from '../prompt/buildPrompt';
+
 export function initLoader(): void {
   loadAllConfigs();
 
@@ -84,6 +86,7 @@ export function initLoader(): void {
   watcher.on('add', (filePath) => {
     if (!filePath.endsWith('.json')) return;
     logger.info({ filePath }, 'Hot-reload: file added');
+    clearStaticPromptCache();
     if (filePath.includes('campaigns')) loadCampaignFile(filePath);
     if (filePath.includes('agents')) loadAgentFile(filePath);
   });
@@ -91,6 +94,7 @@ export function initLoader(): void {
   watcher.on('change', (filePath) => {
     if (!filePath.endsWith('.json')) return;
     logger.info({ filePath }, 'Hot-reload: file changed');
+    clearStaticPromptCache();
     if (filePath.includes('campaigns')) loadCampaignFile(filePath);
     if (filePath.includes('agents')) loadAgentFile(filePath);
   });
@@ -98,6 +102,7 @@ export function initLoader(): void {
   watcher.on('unlink', (filePath) => {
     if (!filePath.endsWith('.json')) return;
     logger.info({ filePath }, 'Hot-reload: file deleted');
+    clearStaticPromptCache();
     const id = path.basename(filePath, '.json');
     if (filePath.includes('campaigns')) campaignsMap.delete(id);
     if (filePath.includes('agents')) agentsMap.delete(id);

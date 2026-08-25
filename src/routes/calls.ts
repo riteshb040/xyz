@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { InitiateCallSchema, DispositionCallSchema } from '../schemas/callLifecycle.schema';
 import { getCampaign, getAgent } from '../config/loader';
 import { getOrCreateSession, getSessionById, appendSessionTurn, saveSessionToDiskAsync, getAllSessions } from '../services/sessionStore';
-import { buildFastGreeting, buildPrompt } from '../prompt/buildPrompt';
+import { buildFastGreeting, buildPrompt, buildCompactVoicePrompt } from '../prompt/buildPrompt';
 import { callSarvamLLM } from '../llm/sarvamClient';
 import { postProcessOutput } from '../llm/postProcess';
 import { generateCallSummary } from '../llm/summarizeCall';
@@ -35,15 +35,12 @@ async function handleInitiateCall(request: FastifyRequest, reply: FastifyReply):
   // Initialize clean isolated session
   const session = getOrCreateSession(callId, campaignId, agentId, variables);
 
-  // Generate dynamic LLM opening greeting using campaign & agent system prompt
+  // Generate dynamic LLM opening greeting using 3-layer compact voice prompt
   let openingGreetingText = '';
   try {
-    const greetingPrompt = buildPrompt(campaign, agent, variables, [], 'INITIAL_GREETING');
-    const llmResult = await callSarvamLLM(
-      'Generate the initial opening phone call greeting to the customer.',
-      greetingPrompt.fullPrompt
-    );
-    const processed = postProcessOutput(llmResult.rawText, agent);
+    const greetingPrompt = buildCompactVoicePrompt(campaign, agent, variables, [], 'INITIAL_GREETING');
+    const llmResult = await callSarvamLLM(greetingPrompt.messages);
+    const processed = postProcessOutput(llmResult.rawText, agent, 'voice');
     openingGreetingText = processed.text;
   } catch (err: any) {
     logger.warn({ err: err.message, callId }, 'LLM opening greeting failed; using safety fallback');
