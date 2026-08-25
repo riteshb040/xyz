@@ -76,15 +76,12 @@ export async function generateRoute(fastify: FastifyInstance): Promise<void> {
         if (isInitialTurn) {
           // Turn 1: Dynamic LLM Opening Greeting generated from campaign/agent prompt
           const greetingPrompt = buildPrompt(campaign, agent, variables, [], 'INITIAL_GREETING', currentState);
-          const llmResult = await callSarvamLLM(
-            'Generate the initial opening phone call greeting to the customer.',
-            greetingPrompt.fullPrompt
-          );
+          const llmResult = await callSarvamLLM(greetingPrompt.messages);
           responseOutput = postProcessOutput(llmResult.rawText, agent);
           promptTokens = llmResult.promptTokens || 0;
           completionTokens = llmResult.completionTokens || 0;
         } else {
-          // Subsequent Turns: Dynamic LLM Spoken Response using full campaign/agent prompt & history
+          // Subsequent Turns: Dynamic ChatCompletion messages array (system + history turns)
           const fullPromptResult = buildPrompt(
             campaign,
             agent,
@@ -94,10 +91,7 @@ export async function generateRoute(fastify: FastifyInstance): Promise<void> {
             undefined,
             undefined
           );
-          const llmResult = await callSarvamLLM(
-            lastUserText || 'Respond naturally as the agent.',
-            fullPromptResult.fullPrompt
-          );
+          const llmResult = await callSarvamLLM(fullPromptResult.messages);
           responseOutput = postProcessOutput(llmResult.rawText, agent);
           promptTokens = llmResult.promptTokens || 0;
           completionTokens = llmResult.completionTokens || 0;

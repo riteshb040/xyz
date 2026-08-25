@@ -57,10 +57,7 @@ async function main() {
   const greetingPrompt = buildPrompt(mockCampaign, mockAgent, vars, [], 'INITIAL_GREETING');
   
   try {
-    const greetingRes = await callSarvamLLM(
-      'Generate the opening phone call greeting to customer Rakesh Sharma.',
-      greetingPrompt.fullPrompt
-    );
+    const greetingRes = await callSarvamLLM(greetingPrompt.messages);
     const processedGreeting = postProcessOutput(greetingRes.rawText, mockAgent);
     const latency = Date.now() - start;
     console.log(`🤖 AGENT (LLM): ${processedGreeting.text} (⚡ ${latency}ms)`);
@@ -69,7 +66,7 @@ async function main() {
     console.error('LLM Greeting Error:', err.message);
   }
 
-  // SUBSEQUENT TURNS: Live LLM Agent Conversation using full prompt & history
+  // SUBSEQUENT TURNS: Live LLM Agent Conversation using messages array & history
   for (const input of inputs) {
     console.log(`\n👤 CUSTOMER: ${input}`);
     history.push({ role: 'user', content: input });
@@ -77,7 +74,7 @@ async function main() {
     const turnStart = Date.now();
     try {
       const fullPromptResult = buildPrompt(mockCampaign, mockAgent, vars, history);
-      const res = await callSarvamLLM(input, fullPromptResult.fullPrompt);
+      const res = await callSarvamLLM(fullPromptResult.messages);
       const processed = postProcessOutput(res.rawText, mockAgent);
       const latency = Date.now() - turnStart;
 

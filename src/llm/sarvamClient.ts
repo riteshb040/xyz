@@ -9,15 +9,17 @@ export interface SarvamLLMResponse {
 }
 
 export async function callSarvamLLM(
-  prompt: string,
+  promptOrMessages: string | Array<{ role: string; content: string }>,
   systemMessage?: string
 ): Promise<SarvamLLMResponse> {
   const startTime = Date.now();
 
-  const messages = [
-    ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
-    { role: 'user', content: prompt },
-  ];
+  const messages = Array.isArray(promptOrMessages)
+    ? promptOrMessages
+    : [
+        ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
+        { role: 'user', content: promptOrMessages },
+      ];
 
   const payload = {
     model: env.SARVAM_MODEL,
