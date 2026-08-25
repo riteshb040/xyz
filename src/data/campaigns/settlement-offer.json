@@ -1,0 +1,35 @@
+{
+  "id": "settlement-offer",
+  "name": "One-Time Settlement (OTS) Negotiation Campaign",
+  "description": "Special resolution offer call providing a discounted principal payment to close long-overdue accounts",
+  "goal": "Present a one-time settlement discount offer to resolve the defaulted loan account amicably.",
+  "requiredVariables": [
+    "customerName",
+    "debtAmount",
+    "settlementAmount",
+    "discountPercentage",
+    "currency",
+    "validUntilDate",
+    "loanId"
+  ],
+  "optionalVariables": [
+    "paymentLink"
+  ],
+  "scriptFlow": [
+    "Greet customer and acknowledge past payment difficulties empatheticly.",
+    "Introduce the limited-time One-Time Settlement (OTS) offer approved by management.",
+    "Clearly state the discounted settlement amount vs the total debt amount.",
+    "Emphasize the validity deadline and benefits (NOC issuance, closing the file).",
+    "Get commitment or agreement to receive the payment link."
+  ],
+  "constraints": [
+    "Do not offer discounts lower than the authorized settlementAmount.",
+    "Clearly state that settlement will be reported to credit bureau as 'Settled'.",
+    "Ensure offer conditions are communicated clearly."
+  ],
+  "escalationTriggers": [
+    "Customer asks for even lower settlement amount",
+    "Customer demands immediate CIBIL clear certificate",
+    "Customer requests manager call"
+  ]
+}

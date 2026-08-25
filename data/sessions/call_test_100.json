@@ -1,0 +1,25 @@
+{
+  "callId": "call_test_100",
+  "campaignId": "loan-default-30day",
+  "agentId": "polite-reminder",
+  "startTime": "2026-08-25T09:35:59.874Z",
+  "updatedTime": "2026-08-25T09:35:59.917Z",
+  "variables": {
+    "customerName": "Rakesh Sharma",
+    "debtAmount": 24500,
+    "currency": "INR",
+    "dueDate": "2026-08-10",
+    "daysOverdue": 15,
+    "loanId": "LN-88213"
+  },
+  "history": [
+    {
+      "role": "assistant",
+      "content": "Namaste Rakesh Sharma ji, main loan account recovery team se baat kar raha hoon. Aapke account par ₹24,500 ka payment pending hai. Kya aap aaj iski payment complete kar paayenge?"
+    },
+    {
+      "role": "assistant",
+      "content": "Samajh raha hoon Rakesh ji. Lekin batayiye toh sahi ki dikkat kya aa rahi hai?"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "loan-default-90day",
+  "name": "90-Day Serious Loan Default Recovery",
+  "description": "Urgent recovery call for customers 60-90 days overdue",
+  "goal": "Firmly remind the customer of serious delinquency status, explain credit impact, and secure immediate full or partial payment.",
+  "requiredVariables": [
+    "customerName",
+    "debtAmount",
+    "currency",
+    "dueDate",
+    "daysOverdue",
+    "loanId"
+  ],
+  "optionalVariables": [
+    "totalOutstandingFees",
+    "creditBureauReportDate"
+  ],
+  "scriptFlow": [
+    "Confirm customer identity immediately.",
+    "Highlight that account is severely past due (90 days).",
+    "Explain impact on CIBIL/Credit score and potential escalation to field recovery.",
+    "Demand clear timeline or immediate UPI payment commitment.",
+    "Inform about pre-legal notice risk if unpaid within 48 hours."
+  ],
+  "constraints": [
+    "Remain strictly professional; no harassment or vulgar language.",
+    "Do not fake legal notices or claim to be court officials.",
+    "State official consequences clearly without exaggeration."
+  ],
+  "escalationTriggers": [
+    "Customer refuses payment outright",
+    "Customer demands legal notice in writing",
+    "Customer claims bankruptcy or fraud"
+  ]
+}

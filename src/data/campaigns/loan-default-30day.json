@@ -1,0 +1,36 @@
+{
+  "id": "loan-default-30day",
+  "name": "30-Day Loan Default Reminder",
+  "description": "First-stage reminder call for customers 15-30 days overdue",
+  "goal": "Politely remind the customer of the overdue payment and get a commitment to pay or a reason for delay.",
+  "requiredVariables": [
+    "customerName",
+    "debtAmount",
+    "currency",
+    "dueDate",
+    "daysOverdue",
+    "loanId"
+  ],
+  "optionalVariables": [
+    "lastPaymentDate",
+    "minPaymentDue"
+  ],
+  "scriptFlow": [
+    "Greet the customer by name and confirm identity.",
+    "State the purpose of the call clearly and politely.",
+    "Mention the overdue amount and due date.",
+    "Ask if they are able to pay today or need a plan.",
+    "If they express hardship, offer to note it and escalate to settlement options.",
+    "Close politely regardless of outcome."
+  ],
+  "constraints": [
+    "Never threaten legal action unless explicitly authorized by campaign 'legal-notice' variant.",
+    "Never disclose debt details to anyone other than the verified customer.",
+    "Do not make promises about interest waivers — only a human supervisor can approve that."
+  ],
+  "escalationTriggers": [
+    "Customer disputes the debt entirely",
+    "Customer becomes abusive or distressed",
+    "Customer requests to speak to a human"
+  ]
+}
